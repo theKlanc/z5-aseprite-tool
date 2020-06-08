@@ -83,7 +83,7 @@ function editBlock(blockID, bt,parentdlg,minNum,btjname)
             saveBlock(dlg,bt[blockID])
             bt[blockID]["sprite"]["frames"][i] = nil
             dlg:close{}
-            editBlock(blockID,bt)
+            editBlock(blockID,bt,parentdlg,minNum,btjname)
         end
         }
 
@@ -95,7 +95,7 @@ function editBlock(blockID, bt,parentdlg,minNum,btjname)
         addFrame(bt[blockID])
         saveBlock(dlg,bt[blockID])
         dlg:close{}
-        editBlock(blockID,bt)
+        editBlock(blockID,bt,parentdlg,minNum,btjname)
     end}
     dlg:newrow{}
     dlg:button{ id="save", text="Save",
@@ -198,6 +198,7 @@ end
 --[[
   TODO
 
+  Backup blocktable before editing
   Ability to delete blocks
 
 ]]
