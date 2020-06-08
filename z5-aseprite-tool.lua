@@ -1,5 +1,7 @@
 json = dofile("json.lual")
 
+pageSize = 15
+
 function readAll(file)
     local f = assert(io.open(file, "rb"))
     local content = f:read("*all")
@@ -44,7 +46,21 @@ function saveBlock(dialog,block)
     end
 end
 
-function editBlock(blockID, bt)
+function newBlock(bt)
+    table.insert(bt,{})
+    bt[#bt]["ID"] = #bt - 1
+    bt[#bt]["name"] = "newBlock"
+    bt[#bt]["visible"] = true
+    bt[#bt]["solid"] = true
+    bt[#bt]["opaque"] = true
+    bt[#bt]["mass"] = 1000
+    bt[#bt]["collider"] = 0
+    bt[#bt]["sprite"] = {}
+    bt[#bt]["sprite"]["path"] = "spritesheet.png"
+    bt[#bt]["sprite"]["frames"] = {}
+end
+
+function editBlock(blockID, bt,parentdlg,minNum,btjname)
     local dlg = Dialog()
     dlg:label{label="ID: " .. bt[blockID]["ID"]}
     dlg:newrow{}
@@ -82,9 +98,12 @@ function editBlock(blockID, bt)
         editBlock(blockID,bt)
     end}
     dlg:newrow{}
-    dlg:button{ id="save", text="save",
+    dlg:button{ id="save", text="Save",
         onclick= function()
             saveBlock(dlg,bt[blockID])
+            dlg:close{}
+            parentdlg:close{}
+            openbt(bt,btjname,minNum)
         end
         }
     dlg:button{ id="cancel", text="Cancel" , onclick=function () dlg:close{} end }
@@ -97,21 +116,16 @@ function save(bt,btPath)
     outputFile:close()
 end
 
-function openbt(btj,minNum)
-    local fileContents = readAll(btj)
-    local backupFile = io.open(btj .. ".bak","w")
-    backupFile:write(json.decode(json.encode(fileContents)))
-    backupFile:close()
-    local blockTable = json.decode(fileContents)
+function openbt(bt,btjname,minNum)
     local dlg = Dialog()
     local counter = 0
     local length = 0
-    for bid,block in pairs(blockTable) do
+    for bid,block in pairs(bt) do
         length = length + 1
-        if block["ID"] >= minNum and counter < 15 then
-            dlg:button{id = block["ID"], label =block["ID"], text = block["name"], 
+        if bid >= minNum and counter < 15 then
+            dlg:button{id = bid-1, label = bid-1, text = block["name"], 
             onclick= function ()
-                editBlock(bid,blockTable) 
+                editBlock(bid,bt,dlg,minNum,btjname) 
             end
             }
             dlg:newrow()
@@ -119,11 +133,37 @@ function openbt(btj,minNum)
         end
     end
     dlg:separator{}
-    dlg:button{id = "newBlock", text = "+"}
+    dlg:button{id = "newBlock", text = "+",
+    onclick = function()
+        newBlock(bt)
+        editBlock(#bt,bt,dlg,minNum,btjname)
+    end
+    }   
     dlg:newrow()
-    dlg:button{ id="save", text="save",
+    dlg:button{id="prev",text="<",onclick=
+    function()
+        local newStart = minNum - pageSize
+        if newStart < 0 then
+            newStart = 0
+        end
+        dlg:close{}
+        openbt(bt,btjname,newStart)
+    end
+    }
+    dlg:button{id="next",text=">",onclick=
+    function()
+        local newStart = minNum + pageSize
+        if newStart < 0 then
+            newStart = 0
+        end
+        dlg:close{}
+        openbt(bt,btjname,newStart)
+    end
+    }
+    dlg:newrow()
+    dlg:button{ id="save", text="Save",
         onclick= function()
-            save(blockTable,btj)
+            save(bt,btjname)
             dlg:close()
         end
     }
@@ -131,6 +171,8 @@ function openbt(btj,minNum)
     dlg:show{wait = false}
 end
 
+
+--MAIN
 local dlg = Dialog()
 dlg:file{ id="btjson",
     label="Open blocktable.json",
@@ -140,14 +182,22 @@ dlg:file{ id="btjson",
     filename="/home/klanc/Projects/Uni/TFG/Z5/data/blockTable.json",
     filetypes={ "json" },
 }
-dlg:number{id="num", label="minNum"}
 dlg:button{ id="ok", text="OK"  }
 dlg:button{ id="cancel", text="Cancel"  }
 dlg:show{}
 local data = dlg.data
 if data.ok then
-    openbt(data.btjson,data.num)
+    local fileContents = readAll(data.btjson)
+    local blockTable = json.decode(fileContents)
+    openbt(blockTable,data.btjson,0)
 end
 if data.cancel then
     return
 end
+
+--[[
+  TODO
+
+  Ability to delete blocks
+
+]]
