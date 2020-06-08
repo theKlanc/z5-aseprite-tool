@@ -42,7 +42,6 @@ function saveBlock(dialog,block)
             block["collider"] = 2
         end
     end
-    dialog:close{}
 end
 
 function editBlock(blockID, bt)
@@ -65,7 +64,10 @@ function editBlock(blockID, bt)
         dlg:label{id="fl"..i ,label="frame ".. i,text=frame["startX"]..", "..frame["startY"]}
         dlg:button{id="fd"..i,text="-",
         onclick=function()
+            saveBlock(dlg,bt[blockID])
             bt[blockID]["sprite"]["frames"][i] = nil
+            dlg:close{}
+            editBlock(blockID,bt)
         end
         }
 
@@ -76,6 +78,8 @@ function editBlock(blockID, bt)
     onclick= function ()
         addFrame(bt[blockID])
         saveBlock(dlg,bt[blockID])
+        dlg:close{}
+        editBlock(blockID,bt)
     end}
     dlg:newrow{}
     dlg:button{ id="save", text="save",
